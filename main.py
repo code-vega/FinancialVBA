@@ -7,6 +7,7 @@ from urllib.request import urlopen
 import json
 import pandas as pd
 import PySimpleGUI as sg
+from testfile import return_two
 
 
 def get_stockprice(ticker):
@@ -71,5 +72,6 @@ def table_example(ticker):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     build_window_layout()
+    print(return_two())
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
