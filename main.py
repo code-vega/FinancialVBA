@@ -1,24 +1,17 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
 from urllib.request import urlopen
 import json
 import pandas as pd
 import PySimpleGUI as sg
-from testfile import return_two
+from testfile import invoke_rest_method
+from openpyxl import Workbook
 
 
-def get_stockprice(ticker):
-    myapikey = '6422462b31d8e0f20fc5841e1b8a6323'
-    url = "https://financialmodelingprep.com/api/v3/profile/" + ticker + "?apikey=" + myapikey
-    response = urlopen(url)
-    urldata = response.read().decode("utf-8")
-    my_json = json.loads(urldata)
-    pd1 = pd.DataFrame(my_json)
-    stockprice = pd1["price"].values[0]
-    return stockprice
+def get_stock_data(ticker):
+    my_api_key = '6422462b31d8e0f20fc5841e1b8a6323'
+    url = "https://financialmodelingprep.com/api/v3/profile/" + ticker + "?apikey=" + my_api_key
+    df = invoke_rest_method(url)
+
+    return df
 
 
 def build_window_layout():
@@ -27,40 +20,45 @@ def build_window_layout():
         [sg.Text('Ticker'), sg.InputText()],
         [sg.Button('Ok'), sg.Button('Cancel')]
     ]
-    window = sg.Window("mainss", layout)
+    window = sg.Window("Main", layout)
     while True:
         event, values = window.read()
         if event == sg.WIN_CLOSED or event == 'Cancel':  # if user closes window or clicks cancel
             break
-        stock_price = get_stockprice(values[0])
-        stock_price2 = table_example(values[0])
-        print('You entered ', values[0], stock_price)
+        if event == 'Ok' and len(values[0]) < 1:
+            print('Please enter a valid ticker')
+            break
+        try:
+            df = get_stock_data(values[0])
+            build_table_from_dataframe(df)
+            print('You entered ', values[0])
+        except:
+            print('Error finding ticker')
 
     window.close()
 
 
-def table_example(ticker):
+def build_table_from_dataframe(df, columnCSV=''):
     sg.set_options(auto_size_buttons=True)
-    # Header=None means you directly pass the columns names to the dataframe
-    myapikey = '6422462b31d8e0f20fc5841e1b8a6323'
-    url = "https://financialmodelingprep.com/api/v3/profile/" + ticker + "?apikey=" + myapikey
-    response = urlopen(url)
-    urldata = response.read().decode("utf-8")
-    my_json = json.loads(urldata)
-    df = pd.DataFrame(my_json)
-    data = df[["symbol", "price"]].values.tolist()  # read everything else into a list of rows
-    # Uses the first row (which should be column names) as columns names
-    print(df[["symbol", "price"]].values.tolist())
-    header_list = df[["symbol", "price"]].columns.tolist()
-    # Drops the first row in the table (otherwise the header names and the first row will be the same)
 
-
+    if len(columnCSV) > 1:
+        commas = columnCSV.count(',')
+        if commas > 0:
+            column_list = columnCSV.split(',')
+            data = df[column_list].values.tolist()
+            header_list = df[column_list].columns.tolist()
+        else:
+            data = df[[columnCSV]].values.tolist()
+            header_list = df[[columnCSV]].columns.tolist()
+    else:
+        data = df.values.tolist()
+        header_list = df.columns.tolist()
 
     layout = [
         [sg.Table(values=data,
                   headings=header_list,
                   display_row_numbers=True,
-                  auto_size_columns=False,
+                  auto_size_columns=True,
                   num_rows=min(25, len(data)))]
     ]
 
@@ -72,6 +70,7 @@ def table_example(ticker):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     build_window_layout()
-    print(return_two())
-
+    df = get_stock_data('MSFT')
+    df.to_excel(f'C:/Users/carlos vega/pycharmprojects/FinancialVBA/test.xlsx')
+    wb = Workbook()
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
